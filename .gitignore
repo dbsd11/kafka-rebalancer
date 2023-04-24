@@ -1,0 +1,49 @@
+HELP.md
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+# *.pem
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+/build/
+
+
+# C#
+*.suo
+*.user
+*.sln.docstates
+/csharp/FactoryClient/FactoryClient/FactoryClient/[Dd]ebug/
+/csharp/FactoryClient/FactoryClient/FactoryClient/[Rr]elease/
+/csharp/FactoryClient/FactoryClient/FactoryClient/[Bb]in/
+/csharp/FactoryClient/FactoryClient/FactoryClient/[Oo]bj/
+/csharp/FactoryClient/FactoryClient/.vs/
+/csharp/FactoryClient/FactoryClient/packages/
+
+### dev files
+/src/main/resources/application-dev.yml
+/src/main/resources/application-dev2.yml
+*DevTestController*
+*DevTest*
+
+.vscode
+
+.DS_Store

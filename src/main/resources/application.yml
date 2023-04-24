@@ -1,0 +1,78 @@
+server:
+  port: 50505
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  cache:
+    cache-names: local-cache
+    type: caffeine
+    caffeine.spec: initialCapacity=500,maximumSize=100000,expireAfterWrite=1m
+  datasource:
+    hikari:
+      connection-test-query: SELECT 1
+      minimum-idle: 1
+      maximum-pool-size: 5
+      pool-name: dbcp1
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:/tmp/cucumber/data:public;MODE=MySQL;DATABASE_TO_LOWER=TRUE;IGNORE_UNKNOWN_SETTINGS=TRUE;AUTO_RECONNECT=TRUE;AUTO_SERVER=TRUE;AUTO_SERVER_PORT=65000;
+    username: nouser
+    password: nopassword
+    type: com.zaxxer.hikari.HikariDataSource
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  jpa:
+    database:
+      platform: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: false
+  redis:
+    host: 127.0.0.1
+    port: 6379
+  kafka:
+    bootstrap-servers: 127.0.0.1:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    consumer:
+      group-id: rebalancer-demo
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: true
+      auto-commit-interval: 1000
+      max-poll-records: 50
+      topics:
+        - test-data
+
+thread-pool-props:
+  corePoolSize: 5
+  maxPoolSize: 100
+  keepAliveSeconds: 100
+  queueCapacity: 1000
+
+# 配置健康检查
+management:
+  endpoint:
+    info:
+      enabled: true
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    threaddump:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: info,health,metrics,threaddump,prometheus
+        exclude: shutdown
+  health:
+    db:
+      enabled: true
+    diskspace:
+      enabled: true
+    redis:
+      enabled: true
