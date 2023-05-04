@@ -2,10 +2,14 @@ package group.bison.kafka.rebalancer.remote_mq;
 
 import java.util.ArrayDeque;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.integration.channel.QueueChannel;
@@ -18,6 +22,8 @@ import group.bison.kafka.rebalancer.topic.TopicConsumerInfoRefresh;
 
 public class MemoryMq {
 
+    private static AtomicInteger autoIncreAtom = new AtomicInteger();
+    private static Map<String, String> consumerKeyMap = new ConcurrentHashMap();
     private static Map<String, QueueChannel> consumerChannelMap = new ConcurrentHashMap<>();
 
     public static void batchAddKafkaInfoFetcherRefresh(List<String> topicList) {
@@ -68,7 +74,8 @@ public class MemoryMq {
     }
 
     static String getConsumerKey(String topic, String consumer) {
-        return String.join("", topic, "-", StringUtils.defaultIfEmpty(consumer, "local"));
+        String topicWithConsumer = String.join("", topic, "-", StringUtils.defaultIfEmpty(consumer, "local"));
+        return consumerKeyMap.computeIfAbsent(topicWithConsumer, (key) -> String.join("", topic, "-", String.valueOf(autoIncreAtom.getAndIncrement())));
     }
 
     static TopicConsumerInfoRefresh generateTopicConsumerInfoRefresh(String topic) {
@@ -76,10 +83,17 @@ public class MemoryMq {
 
             @Override
             public void refreshTopicPartitionConsumer(Map<Integer, String> topicPartitionConsumerMap) {
-
-                topicPartitionConsumerMap.values().forEach(consumer -> {
+                Set<String> consumers = new HashSet<>(topicPartitionConsumerMap.values());
+                consumers.forEach(consumer -> {
                     String consumerKey = getConsumerKey(topic, consumer);
                     consumerChannelMap.putIfAbsent(consumerKey, new QueueChannel(new ArrayDeque(10000)));
+                });
+
+                // check offline consumer
+                consumerKeyMap.entrySet().removeIf(entry -> {
+                    String topicWithConsumer = entry.getKey();
+                    boolean consumerOffline = consumers.stream().noneMatch(consumer -> StringUtils.containsIgnoreCase(topicWithConsumer, consumer));
+                    return consumerOffline;
                 });
             }
         };

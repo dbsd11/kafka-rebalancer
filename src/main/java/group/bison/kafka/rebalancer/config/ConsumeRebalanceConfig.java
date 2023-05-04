@@ -7,9 +7,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Executor;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.BatchConfigurer;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
@@ -26,8 +28,10 @@ import org.springframework.batch.item.support.AbstractItemStreamItemReader;
 import org.springframework.batch.item.support.AbstractItemStreamItemWriter;
 import org.springframework.batch.repeat.policy.SimpleCompletionPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.batch.BasicBatchConfigurer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -55,6 +59,12 @@ public class ConsumeRebalanceConfig {
     private ConsumerProperties consumerProperties;
     @Autowired
     private NamedParameterJdbcTemplate jdbcTemplate;
+
+    @Bean
+    @Primary
+    public BatchConfigurer batchConfigurer(Executor executor) {
+        return new BasicBatchConfigurer();
+    }
 
     @Bean
 	public Job job() {
@@ -95,6 +105,8 @@ public class ConsumeRebalanceConfig {
                     String consumerInstance = consumeRebalancer.computeConsumerInstance(item);
                     MemoryMq.push(topic, consumerInstance, item);
                 });
+
+                //wait for consume
             }
             
         }).build();
