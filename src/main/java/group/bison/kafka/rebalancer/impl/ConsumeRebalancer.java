@@ -16,6 +16,8 @@ public class ConsumeRebalancer {
 
     private final String topic;
 
+    private final String consumerGroup;
+
     private int topicPartitionNum = 1;
 
     private Map<Integer, String> topicPartition2ConsumerMap = new HashMap<>();
@@ -24,8 +26,9 @@ public class ConsumeRebalancer {
 
     private final MessageKeyPartitionPolicy messageKeyPartitionPolicy;
 
-    public ConsumeRebalancer(String topic, MessageKeyPolicy messageKeyPolicy, MessageKeyPartitionPolicy messageKeyPartitionPolicy) {
+    public ConsumeRebalancer(String topic, String consumerGroup, MessageKeyPolicy messageKeyPolicy, MessageKeyPartitionPolicy messageKeyPartitionPolicy) {
         this.topic = topic;
+        this.consumerGroup = consumerGroup;
         this.messageKeyPolicy = messageKeyPolicy;
         this.messageKeyPartitionPolicy = messageKeyPartitionPolicy;
 
@@ -40,7 +43,7 @@ public class ConsumeRebalancer {
             }
         });
 
-        KafkaInfoFetcher.addTopicConsumerInfoRefresh(new TopicConsumerInfoRefresh(topic) {
+        KafkaInfoFetcher.addTopicConsumerInfoRefresh(new TopicConsumerInfoRefresh(topic, consumerGroup) {
 
             @Override
             public void refreshTopicPartitionConsumer(Map<Integer, String> newTopicPartitionConsumerMap) {

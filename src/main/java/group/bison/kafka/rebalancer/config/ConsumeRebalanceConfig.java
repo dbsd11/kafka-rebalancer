@@ -1,15 +1,20 @@
 package group.bison.kafka.rebalancer.config;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
+import group.bison.kafka.rebalancer.impl.ConsumeRebalancer;
+import group.bison.kafka.rebalancer.remote_mq.MemoryMq;
+import group.bison.kafka.rebalancer.utils.JsonUtil;
+import group.bison.springbatch.config.OverideSpringBatchJobConfiguration;
+import group.bison.springbatch.job.AfterJobExecutionListenerSupport;
+import group.bison.springbatch.job.ScheduledCompletionPolicy;
+import group.bison.springbatch.reader.RemoteItemReader;
+import group.bison.springbatch.reader.SpringBatchKafkaItemReader;
+import group.bison.springbatch.writer.LocalMqItemWriter;
+import group.bison.springbatch.writer.RemoteMqItemWriter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.integration.config.annotation.EnableBatchIntegration;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
@@ -23,17 +28,10 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-import group.bison.kafka.rebalancer.impl.ConsumeRebalancer;
-import group.bison.kafka.rebalancer.remote_mq.MemoryMq;
-import group.bison.kafka.rebalancer.utils.JsonUtil;
-import group.bison.springbatch.config.OverideSpringBatchJobConfiguration;
-import group.bison.springbatch.job.AfterJobExecutionListenerSupport;
-import group.bison.springbatch.job.ScheduledCompletionPolicy;
-import group.bison.springbatch.reader.RemoteItemReader;
-import group.bison.springbatch.reader.SpringBatchKafkaItemReader;
-import group.bison.springbatch.writer.LocalMqItemWriter;
-import group.bison.springbatch.writer.RemoteMqItemWriter;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 @Slf4j
 @Configuration
@@ -70,8 +68,9 @@ public class ConsumeRebalanceConfig implements InitializingBean {
     @Bean
     // @StepScope
     public Step startConsumeRebalance() {
-        String topic = "test-data";
-        ConsumeRebalancer consumeRebalancer = new ConsumeRebalancer(topic, (message) -> {
+        String topic = kafkaProperties.getConsumer().getProperties().get("topics.0");
+        String consumerGroup = kafkaProperties.getConsumer().getGroupId();
+        ConsumeRebalancer consumeRebalancer = new ConsumeRebalancer(topic, consumerGroup, (message) -> {
             Map map = JsonUtil.fromJson(message.toString(), HashMap.class);
             return (String) map.get("traceId");
         }, (key) -> key.hashCode() % 512);
@@ -87,14 +86,15 @@ public class ConsumeRebalanceConfig implements InitializingBean {
     @Bean
     // @StepScope
     public Step pullRemoteMessage() {
-        String topic = "test-data";
+        String topic = kafkaProperties.getConsumer().getProperties().get("topics.0");
+        String consumerGroup = kafkaProperties.getConsumer().getGroupId();
         return stepBuilderFactory.get("pullRemoteMessage").chunk(new ScheduledCompletionPolicy(1000))
-                .reader(new RemoteItemReader(topic)).writer(new LocalMqItemWriter(topic)).build();
+                .reader(new RemoteItemReader(topic, consumerGroup)).writer(new LocalMqItemWriter(topic)).build();
     }
 
     @Bean
     public IntegrationFlow consumeRebalanceFlow() {
-        String topic = "test-data";
+        String topic = kafkaProperties.getConsumer().getProperties().get("topics");
         return IntegrationFlows
                 .from(MemoryMq.getOrCreateLocalChannel(topic))
                 .handle(testDataWriter())
@@ -106,13 +106,15 @@ public class ConsumeRebalanceConfig implements InitializingBean {
     public JdbcBatchItemWriter testDataWriter() {
         JdbcBatchItemWriter jdbcBatchItemWriter = new JdbcBatchItemWriter();
         jdbcBatchItemWriter.setJdbcTemplate(jdbcTemplate);
+        jdbcBatchItemWriter.setSql("insert into `public`.`test-data`(field1, value1, uniq_field2) values (:field1, :value1, :uniq_field2)");
         jdbcBatchItemWriter.afterPropertiesSet();
         return jdbcBatchItemWriter;
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        String topic = "test-data";
-        MemoryMq.initTopicMq(Collections.singletonList(topic));
+        String topic = kafkaProperties.getConsumer().getProperties().get("topics.0");
+        String consumerGroup = kafkaProperties.getConsumer().getGroupId();
+        MemoryMq.initTopicMq(Collections.singletonList(topic), consumerGroup);
     }
 }

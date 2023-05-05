@@ -11,11 +11,11 @@ public class InetUtils {
     
     private static String hostName = "";
 
-    public static String getLocalHostName() {
+    public static String getLocalHostAddress() {
         if(StringUtils.isEmpty(hostName)) {
             try {
                 InetAddress addr = InetAddress.getLocalHost();
-                hostName = addr.getHostName(); //获取本机计算机名称
+                hostName = addr.getHostAddress(); //获取本机计算机名称
             } catch (Exception e) {
                 log.warn("get hostName failed", e);
             }

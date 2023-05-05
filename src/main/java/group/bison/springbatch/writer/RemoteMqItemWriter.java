@@ -26,7 +26,7 @@ public class RemoteMqItemWriter extends AbstractItemStreamItemWriter {
         }
         items.forEach(item -> {
             String consumerInstance = consumeRebalancer.computeConsumerInstance(item);
-            MemoryMq.push(topic, null, item);
+            MemoryMq.push(topic, consumerInstance, item);
         });
     }
     

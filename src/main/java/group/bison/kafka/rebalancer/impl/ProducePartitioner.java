@@ -1,5 +1,6 @@
 package group.bison.kafka.rebalancer.impl;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.kafka.clients.producer.Partitioner;
@@ -10,7 +11,7 @@ import lombok.Data;
 @Data
 public class ProducePartitioner implements Partitioner {
 
-    private static Map<String, ProduceRebalancer> topicProduceRebalancerMap;
+    private static Map<String, ProduceRebalancer> topicProduceRebalancerMap = new HashMap<>();
 
     @Override
     public void configure(Map<String, ?> configs) {

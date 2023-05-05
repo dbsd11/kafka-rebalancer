@@ -21,26 +21,28 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RemoteItemReader extends AbstractItemStreamItemReader {
     private String topic;
+    private String consumerGroup;
 
     private Iterator itemIt = null;
 
     private String localConsumer = null;
 
-    public RemoteItemReader(String topic) {
+    public RemoteItemReader(String topic, String consumerGroup) {
         this.topic = topic;
-        this.localConsumer = InetUtils.getLocalHostName();
+        this.consumerGroup = consumerGroup;
+        this.localConsumer = InetUtils.getLocalHostAddress();
     }
 
 
     @Override
     @Nullable
     public Object read() throws Exception, UnexpectedInputException, ParseException, NonTransientResourceException {
-        if(itemIt == null || !itemIt.hasNext()) {
+        while(itemIt == null || !itemIt.hasNext()) {
             List pulledRemoteMessageList = new LinkedList();
-            Map<Integer, String> currentTopicPartitionConsumerMap = KafkaInfoFetcher.getCurrentTopicPartitionConsumerMap(topic);
+            Map<Integer, String> currentTopicPartitionConsumerMap = KafkaInfoFetcher.getCurrentTopicPartitionConsumerMap(topic, consumerGroup);
             currentTopicPartitionConsumerMap.values().forEach((consumer) -> {
                 try {
-                    String responseStr = HttpUtils.http2RequestWithPool("GET", String.join("",  "http://", consumer, "/kafka-rebalancer/pull/", topic, "/", localConsumer), null, null);
+                    String responseStr = HttpUtils.http2RequestWithPool("GET", String.join("",  "http://", consumer, ":50505", "/kafka-rebalancer/pull/", topic, "/", localConsumer), null, null);
                     List remoteMessageList = (List)JsonUtil.fromJson(responseStr, HashMap.class).get("list");
                     pulledRemoteMessageList.addAll(0, remoteMessageList);
                 } catch (Exception e) {
@@ -48,6 +50,7 @@ public class RemoteItemReader extends AbstractItemStreamItemReader {
                 }
             });
             itemIt = pulledRemoteMessageList.iterator();
+            Thread.sleep(1000);
         }
         return (itemIt == null || !itemIt.hasNext()) ? null : itemIt.next();
     }

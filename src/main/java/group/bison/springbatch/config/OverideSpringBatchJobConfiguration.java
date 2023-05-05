@@ -14,7 +14,9 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.support.BeanDefinitionValidationException;
+import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.Bean;
@@ -33,7 +35,7 @@ public class OverideSpringBatchJobConfiguration implements ApplicationContextAwa
 	@Bean
     @Primary
     @Order(Ordered.HIGHEST_PRECEDENCE)
-    public BatchConfigurer batchConfigurer(@Autowired Executor executor) throws Exception {
+    public BatchConfigurer batchConfigurer(@Autowired @Qualifier(value = TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME) Executor executor) throws Exception {
         InMemoryBatchConfigurer batchConfigurer = new InMemoryBatchConfigurer();
         batchConfigurer.setTaskExecutor(new TaskExecutorAdapter(executor));
         return batchConfigurer;

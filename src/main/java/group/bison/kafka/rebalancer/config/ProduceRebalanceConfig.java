@@ -1,11 +1,9 @@
 package group.bison.kafka.rebalancer.config;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-
-import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.producer.ProducerConfig;
+import group.bison.kafka.rebalancer.impl.ProduceRebalancer;
+import group.bison.kafka.rebalancer.utils.JsonUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.batch.integration.config.annotation.EnableBatchIntegration;
 import org.springframework.batch.item.kafka.KafkaItemWriter;
 import org.springframework.batch.item.kafka.builder.KafkaItemWriterBuilder;
@@ -19,10 +17,10 @@ import org.springframework.integration.dsl.IntegrationFlows;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 
-import group.bison.kafka.rebalancer.impl.ProducePartitioner;
-import group.bison.kafka.rebalancer.impl.ProduceRebalancer;
-import group.bison.kafka.rebalancer.utils.JsonUtil;
-import lombok.extern.slf4j.Slf4j;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 
 @Slf4j
 @Configuration
@@ -33,28 +31,35 @@ public class ProduceRebalanceConfig {
     private KafkaProperties kafkaProperties;
 
     @Bean
-    public QueueChannel channel() {
+    public QueueChannel produceChannel() {
         return new QueueChannel();
     }
 
     @Bean
 	public IntegrationFlow produceRebalanceFlow() {
-        String topic = "test-data";
+        String topic = kafkaProperties.getConsumer().getProperties().get("topics.0");
         ProduceRebalancer produceRebalancer = new ProduceRebalancer(topic, (message) -> {
-            Map map = JsonUtil.fromJson(message.toString(), HashMap.class);
-            return (String)map.get("traceId");
+            Map map = JsonUtil.fromJson(String.valueOf(message), HashMap.class);
+            return (String)map.get("field1");
          }, (key) -> key.hashCode() % 512);
 
         Properties producerProps = new Properties();
         producerProps.putAll(kafkaProperties.buildProducerProperties());
-        producerProps.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, ProducePartitioner.class.getName());
         KafkaTemplate kafkaTemplate = new KafkaTemplate<>(new DefaultKafkaProducerFactory(producerProps));
+        kafkaTemplate.setDefaultTopic(topic);
 
-        KafkaItemWriter<Long, Object> kafkaItemWriter = new KafkaItemWriterBuilder<Long, Object>().kafkaTemplate(kafkaTemplate).itemKeyMapper(obj -> produceRebalancer.generateMessageKey(produceRebalancer)).build();
+        KafkaItemWriter<String, Object> kafkaItemWriter = new KafkaItemWriterBuilder<String, Object>().kafkaTemplate(kafkaTemplate).itemKeyMapper(obj -> produceRebalancer.generateMessageKey(obj)).build();
 
 		return IntegrationFlows
-				.from(channel())
-				.handle(kafkaItemWriter)
+				.from(produceChannel())
+                .filter((messageInfo) -> {
+                    if(!(messageInfo instanceof Map)) {
+                        return false;
+                    }
+                    return StringUtils.equalsIgnoreCase((String)((Map) messageInfo).get("topic"), topic);
+                })
+                .transform((messageInfo) -> Collections.singletonList((String)((Map) messageInfo).get("message")))
+                .handle(kafkaItemWriter)
 				.get();
 	}
 }

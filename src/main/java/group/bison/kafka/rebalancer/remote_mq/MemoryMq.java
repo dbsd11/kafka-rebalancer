@@ -25,17 +25,17 @@ public class MemoryMq {
     private static Map<String, String> consumerKeyMap = new ConcurrentHashMap();
     private static Map<String, QueueChannel> consumerChannelMap = new ConcurrentHashMap<>();
 
-    public static void initTopicMq(List<String> topicList) {
-        batchAddKafkaInfoFetcherRefresh(topicList);
+    public static void initTopicMq(List<String> topicList, String consumerGroup) {
+        batchAddKafkaInfoFetcherRefresh(topicList, consumerGroup);
     }
 
-    public static void batchAddKafkaInfoFetcherRefresh(List<String> topicList) {
+    public static void batchAddKafkaInfoFetcherRefresh(List<String> topicList, String consumerGroup) {
         if (CollectionUtils.isEmpty(topicList)) {
             return;
         }
 
         topicList.forEach(topic -> {
-            KafkaInfoFetcher.addTopicConsumerInfoRefresh(generateTopicConsumerInfoRefresh(topic));
+            KafkaInfoFetcher.addTopicConsumerInfoRefresh(generateTopicConsumerInfoRefresh(topic, consumerGroup));
         });
     }
 
@@ -81,8 +81,8 @@ public class MemoryMq {
         return consumerKeyMap.computeIfAbsent(topicWithConsumer, (key) -> String.join("", topic, "-", String.valueOf(autoIncreAtom.getAndIncrement())));
     }
 
-    static TopicConsumerInfoRefresh generateTopicConsumerInfoRefresh(String topic) {
-        return new TopicConsumerInfoRefresh(topic) {
+    static TopicConsumerInfoRefresh generateTopicConsumerInfoRefresh(String topic, String consumerGroup) {
+        return new TopicConsumerInfoRefresh(topic, consumerGroup) {
 
             @Override
             public void refreshTopicPartitionConsumer(Map<Integer, String> topicPartitionConsumerMap) {
