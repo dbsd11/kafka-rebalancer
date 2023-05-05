@@ -25,6 +25,10 @@ public class MemoryMq {
     private static Map<String, String> consumerKeyMap = new ConcurrentHashMap();
     private static Map<String, QueueChannel> consumerChannelMap = new ConcurrentHashMap<>();
 
+    public static void initTopicMq(List<String> topicList) {
+        batchAddKafkaInfoFetcherRefresh(topicList);
+    }
+
     public static void batchAddKafkaInfoFetcherRefresh(List<String> topicList) {
         if (CollectionUtils.isEmpty(topicList)) {
             return;

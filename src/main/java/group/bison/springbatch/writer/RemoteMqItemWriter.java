@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.batch.item.support.AbstractItemStreamItemWriter;
 import org.springframework.util.CollectionUtils;
 
-import group.bison.kafka.rebalancer.ConsumeRebalancer;
+import group.bison.kafka.rebalancer.impl.ConsumeRebalancer;
 import group.bison.kafka.rebalancer.remote_mq.MemoryMq;
 
 public class RemoteMqItemWriter extends AbstractItemStreamItemWriter {
