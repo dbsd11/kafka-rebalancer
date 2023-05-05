@@ -3,7 +3,6 @@ package group.bison.kafka.rebalancer.remote_mq;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
