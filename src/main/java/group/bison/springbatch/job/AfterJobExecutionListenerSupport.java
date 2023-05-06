@@ -35,32 +35,32 @@ public class AfterJobExecutionListenerSupport extends JobExecutionListenerSuppor
             log.error("failed update jobExecution", e);
         }
 
-        if(!jobExecution.getStatus().isRunning()) {
-            try {
-                Job job = jobRegistry.getJob(jobName);
-                if(job != null && job.isRestartable() && batchConfig != null && batchConfig.getJobLauncher() != null) {
-                    // try to restart job
-                    log.info("try to restart job {}", jobName);
+        try {
+            Job job = jobRegistry.getJob(jobName);
+            if(job != null && job.isRestartable() && batchConfig != null && batchConfig.getJobLauncher() != null) {
+                // try to restart job
+                log.info("try to restart job {}", jobName);
 
-                    // restart not completed status
-                    jobExecution.setStatus(BatchStatus.STOPPED);
-                    batchConfig.getJobRepository().update(jobExecution);
+                // restart not completed status
+                jobExecution.setStatus(BatchStatus.STOPPED);
+                batchConfig.getJobRepository().update(jobExecution);
 
-                    JobExecution restartJobExecution = batchConfig.getJobLauncher().run(job, jobExecution.getJobParameters());
-                    if(publisher != null) {
-                        publisher.publishEvent(new JobExecutionEvent(restartJobExecution));
-                    }
+                JobExecution restartJobExecution = batchConfig.getJobLauncher().run(job, jobExecution.getJobParameters());
+                if(publisher != null) {
+                    publisher.publishEvent(new JobExecutionEvent(restartJobExecution));
                 }
-            } catch (Exception e) {
-                log.error("failed to restart job {}", jobName, e);
             }
+        } catch (Exception e) {
+            log.error("failed to restart job {}", jobName, e);
         }
     }
 
     @Override
     public void onApplicationEvent(JobExecutionEvent event) {
         JobExecution jobExecution = event.getJobExecution();
-        afterJob(jobExecution);
+        if(!jobExecution.isRunning()) {
+            afterJob(jobExecution);
+        }
     }
 
 	@Override

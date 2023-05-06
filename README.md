@@ -29,7 +29,6 @@ java -jar target/kafka-rebalancer.jar
 依赖服务项
 
 * kafka(listen on 9092)
-* redis(listen on 6379, no password)
 * h2(jdbc:h2:/tmp/kafka-rebalancer/data:public)
 
 测试

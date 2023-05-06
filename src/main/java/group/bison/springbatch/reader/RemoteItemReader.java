@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.batch.item.NonTransientResourceException;
 import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.UnexpectedInputException;
@@ -47,6 +48,10 @@ public class RemoteItemReader extends AbstractItemStreamItemReader {
 
                 try {
                     String responseStr = HttpUtils.http2RequestWithPool("GET", String.join("",  "http://", consumer, ":50505", "/kafka-rebalancer/pull/", topic, "/", localConsumer), null, null);
+                    if(StringUtils.isEmpty(responseStr)) {
+                        return;
+                    }
+                    
                     List remoteMessageList = (List)JsonUtil.fromJson(responseStr, HashMap.class).get("list");
                     pulledRemoteMessageList.addAll(0, remoteMessageList);
                 } catch (Exception e) {
