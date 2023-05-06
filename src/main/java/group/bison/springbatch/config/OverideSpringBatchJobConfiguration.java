@@ -8,6 +8,7 @@ import org.springframework.batch.core.configuration.annotation.BatchConfigurer;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.SimpleBatchConfiguration;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
@@ -73,6 +74,13 @@ public class OverideSpringBatchJobConfiguration implements ApplicationContextAwa
 	public JobRegistry jobRegistry() throws Exception {
 		return simpleBatchConfiguration.jobRegistry();
 	}
+
+	@Bean
+	public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor() throws Exception {
+		JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor = new JobRegistryBeanPostProcessor();
+		jobRegistryBeanPostProcessor.setJobRegistry(jobRegistry());
+		return jobRegistryBeanPostProcessor;
+	} 
 
 	@Bean
 	public JobExplorer jobExplorer() {

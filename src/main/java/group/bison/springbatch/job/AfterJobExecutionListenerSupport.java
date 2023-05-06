@@ -1,5 +1,6 @@
 package group.bison.springbatch.job;
 
+import org.springframework.batch.core.BatchStatus;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.configuration.JobRegistry;
@@ -29,17 +30,30 @@ public class AfterJobExecutionListenerSupport extends JobExecutionListenerSuppor
         log.info("afterJob {} exitStatus:{} exceptions:{} {}", jobName, jobExecution.getExitStatus(), jobExecution.getAllFailureExceptions());
         
         try {
-            Job job = jobRegistry.getJob(jobName);
-            if(job != null && job.isRestartable() && batchConfig != null && batchConfig.getJobLauncher() != null) {
-                // try to restart job
-                log.info("try to restart job {}", jobName);
-                JobExecution restartJobExecution = batchConfig.getJobLauncher().run(job, jobExecution.getJobParameters());
-                if(publisher != null) {
-                    publisher.publishEvent(new JobExecutionEvent(restartJobExecution));
-                }
-            }
+            batchConfig.getJobRepository().update(jobExecution);
         } catch (Exception e) {
-            log.error("failed to restart job {}", jobName);
+            log.error("failed update jobExecution", e);
+        }
+
+        if(!jobExecution.getStatus().isRunning()) {
+            try {
+                Job job = jobRegistry.getJob(jobName);
+                if(job != null && job.isRestartable() && batchConfig != null && batchConfig.getJobLauncher() != null) {
+                    // try to restart job
+                    log.info("try to restart job {}", jobName);
+
+                    // restart not completed status
+                    jobExecution.setStatus(BatchStatus.STOPPED);
+                    batchConfig.getJobRepository().update(jobExecution);
+
+                    JobExecution restartJobExecution = batchConfig.getJobLauncher().run(job, jobExecution.getJobParameters());
+                    if(publisher != null) {
+                        publisher.publishEvent(new JobExecutionEvent(restartJobExecution));
+                    }
+                }
+            } catch (Exception e) {
+                log.error("failed to restart job {}", jobName, e);
+            }
         }
     }
 

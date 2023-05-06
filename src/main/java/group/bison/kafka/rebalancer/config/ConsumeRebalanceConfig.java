@@ -79,7 +79,7 @@ public class ConsumeRebalanceConfig implements InitializingBean {
         consumerProps.putAll(kafkaProperties.buildConsumerProperties());
         SpringBatchKafkaItemReader kafkaItemReader = new SpringBatchKafkaItemReader(consumerProps, topic);
 
-        return stepBuilderFactory.get("startConsumeRebalance").chunk(new ScheduledCompletionPolicy(1000))
+        return stepBuilderFactory.get("startConsumeRebalance").allowStartIfComplete(true).chunk(new ScheduledCompletionPolicy(1000))
                 .reader(kafkaItemReader).writer(new RemoteMqItemWriter(topic, consumeRebalancer)).build();
     }
 
@@ -88,7 +88,7 @@ public class ConsumeRebalanceConfig implements InitializingBean {
     public Step pullRemoteMessage() {
         String topic = kafkaProperties.getConsumer().getProperties().get("topics.0");
         String consumerGroup = kafkaProperties.getConsumer().getGroupId();
-        return stepBuilderFactory.get("pullRemoteMessage").chunk(new ScheduledCompletionPolicy(1000))
+        return stepBuilderFactory.get("pullRemoteMessage").allowStartIfComplete(true).chunk(new ScheduledCompletionPolicy(1000))
                 .reader(new RemoteItemReader(topic, consumerGroup)).writer(new LocalMqItemWriter(topic)).build();
     }
 
