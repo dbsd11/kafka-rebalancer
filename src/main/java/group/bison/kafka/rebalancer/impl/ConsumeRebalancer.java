@@ -3,12 +3,14 @@ package group.bison.kafka.rebalancer.impl;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 import group.bison.kafka.rebalancer.policy.MessageKeyPartitionPolicy;
 import group.bison.kafka.rebalancer.policy.MessageKeyPolicy;
 import group.bison.kafka.rebalancer.tools.KafkaInfoFetcher;
 import group.bison.kafka.rebalancer.topic.TopicConsumerInfoRefresh;
 import group.bison.kafka.rebalancer.topic.TopicInfoRefresh;
-
+import group.bison.kafka.rebalancer.utils.InetUtils;
 import lombok.Data;
 
 @Data
@@ -56,7 +58,8 @@ public class ConsumeRebalancer {
         String key = messageKeyPolicy.computeKey(message);
         int partition = messageKeyPartitionPolicy.computePartition(key);
         int topicPartition = partition % topicPartitionNum;
-        return topicPartition2ConsumerMap.get(topicPartition);
+        String consumerInstance = topicPartition2ConsumerMap.get(topicPartition);
+        return InetUtils.isLocalAddress(consumerInstance) ? null : consumerInstance;
     }
 
 }

@@ -71,8 +71,8 @@ public class ConsumeRebalanceConfig implements InitializingBean {
         String topic = kafkaProperties.getConsumer().getProperties().get("topics.0");
         String consumerGroup = kafkaProperties.getConsumer().getGroupId();
         ConsumeRebalancer consumeRebalancer = new ConsumeRebalancer(topic, consumerGroup, (message) -> {
-            Map map = JsonUtil.fromJson(message.toString(), HashMap.class);
-            return (String) map.get("traceId");
+            Map map = message instanceof Map ? (Map)message : JsonUtil.fromJson(message.toString(), HashMap.class);
+            return (String) map.get("field1");
         }, (key) -> key.hashCode() % 512);
 
         Properties consumerProps = new Properties();
@@ -94,9 +94,10 @@ public class ConsumeRebalanceConfig implements InitializingBean {
 
     @Bean
     public IntegrationFlow consumeRebalanceFlow() {
-        String topic = kafkaProperties.getConsumer().getProperties().get("topics");
+        String topic = kafkaProperties.getConsumer().getProperties().get("topics.0");
         return IntegrationFlows
                 .from(MemoryMq.getOrCreateLocalChannel(topic))
+                .transform(message -> Collections.singletonList(message))
                 .handle(testDataWriter())
                 .get();
     }

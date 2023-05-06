@@ -18,7 +18,9 @@ import org.springframework.util.CollectionUtils;
 
 import group.bison.kafka.rebalancer.tools.KafkaInfoFetcher;
 import group.bison.kafka.rebalancer.topic.TopicConsumerInfoRefresh;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class MemoryMq {
 
     private static AtomicInteger autoIncreAtom = new AtomicInteger();
@@ -64,9 +66,14 @@ public class MemoryMq {
 
         Message message = null;
         int pollLimit = batchSize != null ? batchSize : Integer.valueOf(1000);
-        while ((message = messageChannel.receive()) != null && messageList.size() <= pollLimit) {
-            messageList.add(message.getPayload());
+        try {
+            while ((message = messageChannel.receive(1000)) != null && messageList.size() <= pollLimit) {
+                messageList.add(message.getPayload());
+            }
+        } catch (Exception e) {
+            log.debug("pull timeout {}", e.getMessage());
         }
+        
         return messageList;
     }
 
@@ -94,6 +101,10 @@ public class MemoryMq {
 
                 // check offline consumer
                 consumerKeyMap.entrySet().removeIf(entry -> {
+                    if(StringUtils.equals(entry.getValue(), getConsumerKey(topic, null))) {
+                        return false;
+                    }
+
                     String topicWithConsumer = entry.getKey();
                     boolean consumerOffline = consumers.stream().noneMatch(consumer -> StringUtils.containsIgnoreCase(topicWithConsumer, consumer));
                     return consumerOffline;

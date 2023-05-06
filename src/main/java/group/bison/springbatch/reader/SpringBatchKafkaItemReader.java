@@ -2,6 +2,7 @@ package group.bison.springbatch.reader;
 
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
 
@@ -13,6 +14,7 @@ import org.springframework.batch.item.ParseException;
 import org.springframework.batch.item.UnexpectedInputException;
 import org.springframework.batch.item.support.AbstractItemStreamItemReader;
 
+import group.bison.kafka.rebalancer.utils.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -58,6 +60,7 @@ public class SpringBatchKafkaItemReader extends AbstractItemStreamItemReader {
                     log.info("kafka poll records failed {} ", e.getMessage());
                     needRestartConsumer = true;
                     try {
+                        Thread.sleep(1000);
                         this.kafkaConsumer.close();
                     } catch (Exception e1) {
                     }
@@ -67,6 +70,10 @@ public class SpringBatchKafkaItemReader extends AbstractItemStreamItemReader {
             if (this.consumerRecords != null && this.consumerRecords.hasNext()) {
                 item = this.consumerRecords.next().value();
             }
+        }
+
+        if(item instanceof String) {
+            item = JsonUtil.fromJson((String)item, HashMap.class);
         }
         return item;
     }

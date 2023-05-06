@@ -18,7 +18,7 @@ public class PullMessageController {
 
     @GetMapping("/pull/{topic}/{consumer}")
     public ResponseEntity pull(@PathVariable(name = "topic", required = true) String topic, @PathVariable(name = "consumer", required = true) String consumer,  @RequestParam(name = "batchSize", required = false, defaultValue = "1000") Integer batchSize) {
-        List messageList = MemoryMq.pull(topic, topic, batchSize);
+        List messageList = MemoryMq.pull(topic, consumer, batchSize);
         return ResponseEntity.ok(Collections.singletonMap("list", messageList));
     }
     

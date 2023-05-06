@@ -41,6 +41,10 @@ public class RemoteItemReader extends AbstractItemStreamItemReader {
             List pulledRemoteMessageList = new LinkedList();
             Map<Integer, String> currentTopicPartitionConsumerMap = KafkaInfoFetcher.getCurrentTopicPartitionConsumerMap(topic, consumerGroup);
             currentTopicPartitionConsumerMap.values().forEach((consumer) -> {
+                if(InetUtils.isLocalAddress(consumer)) {
+                    return;
+                }
+
                 try {
                     String responseStr = HttpUtils.http2RequestWithPool("GET", String.join("",  "http://", consumer, ":50505", "/kafka-rebalancer/pull/", topic, "/", localConsumer), null, null);
                     List remoteMessageList = (List)JsonUtil.fromJson(responseStr, HashMap.class).get("list");
