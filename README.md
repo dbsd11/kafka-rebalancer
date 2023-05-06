@@ -41,9 +41,7 @@ java -jar target/kafka-rebalancer.jar
 
    **"需注意数据库模式是一个唯一字符串", 可以直接通过cat h2 lock文件获取，比如：**
 
-   `cat /tmp/kafka-rebalancer/data:public.lock.db `
-
-   ![1683362229012](image/README/1683362229012.png)
+   `cat /tmp/kafka-rebalancer/data:public.lock.db |grep id `
 2. 根据表结构创建mock数据
 
    `curl -XPOST 'http://localhost:50505/kafka-rebalancer/produce/mock/test-data' -H 'content-type:application/json' -d '{"field1":"1", "value1":"value1", "uniq_field2":8}'`
